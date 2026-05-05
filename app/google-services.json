@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "102275364921",
+    "project_id": "smartmail-fb73c",
+    "storage_bucket": "smartmail-fb73c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102275364921:android:148e76706785ab3c2475e8",
+        "android_client_info": {
+          "package_name": "com.example.smartmail"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiFXYAYBQziPqUi_hpl3Ce9HGw6ZV4cTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
