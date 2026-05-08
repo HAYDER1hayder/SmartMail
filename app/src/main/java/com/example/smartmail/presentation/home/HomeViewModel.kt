@@ -94,14 +94,25 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeUiEvent) {
         when (event) {
             is HomeUiEvent.RefreshMails -> {
-                // TODO: اطلب من n8n جلب إيميلات جديدة
-                // viewModelScope.launch { repository.syncMailsFromN8n() }
+                _uiState.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+
+                    // 👇 هذا السطر سيوقظ الـ Repository ليجلب التوكن ويتصل بالسيرفر
+                    repository.syncMailsFromN8n()
+
+                    // ... (يمكنك ترك كود المحاكاة insertFakeData مؤقتاً لتستمتع بالشكل حتى يجهز الرابط) ...
+
+                    _uiState.update { it.copy(isLoading = false) }
+                }
             }
             is HomeUiEvent.OnMailClicked -> {
                 _uiState.update { it.copy(selectedMail = event.mail) }
             }
             is HomeUiEvent.OnDismissMailDetail -> {
                 _uiState.update { it.copy(selectedMail = null) }
+            }
+            is HomeUiEvent.OnCategorySelected -> {
+                _uiState.update { it.copy(selectedCategory = event.category) }
             }
             is HomeUiEvent.OnDeleteSwipe -> {
                 viewModelScope.launch {
@@ -111,6 +122,36 @@ class HomeViewModel @Inject constructor(
             }
             is HomeUiEvent.OnMagicAiButtonClicked -> {
                 // سنقوم ببرمجة السحر هنا لاحقاً ✨
+            }
+            // 👇 داخل when (event) أضف هذه الحالات:
+            is HomeUiEvent.OnQuickReplyClicked -> {
+                _uiState.update { it.copy(isReplying = true, generatedReply = "") }
+            }
+            is HomeUiEvent.OnCancelReply -> {
+                _uiState.update { it.copy(isReplying = false) }
+            }
+            is HomeUiEvent.OnToneChanged -> {
+                _uiState.update { it.copy(replyTone = event.tone) }
+            }
+            is HomeUiEvent.OnGenerateReplyClicked -> {
+                _uiState.update { it.copy(isGeneratingReply = true) }
+                viewModelScope.launch {
+                    // 🪄 محاكاة عمل n8n في توليد الرد (سنربطها لاحقاً)
+                    kotlinx.coroutines.delay(1500)
+
+                    val toneName = when {
+                        _uiState.value.replyTone < 0.3f -> "Formal & Professional"
+                        _uiState.value.replyTone > 0.7f -> "Strict & Direct"
+                        else -> "Friendly & Casual"
+                    }
+
+                    val fakeAiResponse = "Dear ${_uiState.value.selectedMail?.senderName},\n\nBased on your message regarding '${_uiState.value.selectedMail?.subject}', I would like to express that: ${event.shortText}\n\nBest regards,\n${_uiState.value.userName}"
+
+                    _uiState.update { it.copy(
+                        isGeneratingReply = false,
+                        generatedReply = "[$toneName Tone Applied]\n$fakeAiResponse"
+                    ) }
+                }
             }
         }
     }

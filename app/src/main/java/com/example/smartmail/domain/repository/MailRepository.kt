@@ -11,6 +11,6 @@ interface MailRepository{
 
     suspend fun insertMails(mails: List<SmartMailEntity>)
 
-    suspend fun syncMailsFromN8n(userId: String) // دالة لجلب الجديد من السيرفر لاحقاً
+    suspend fun syncMailsFromN8n() // دالة لجلب الجديد من السيرفر لاحقاً
     suspend fun deleteMail(id: String)
 }

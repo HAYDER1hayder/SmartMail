@@ -1,12 +1,11 @@
 package com.example.smartmail.data.repository
 
 import com.example.smartmail.data.local.SmartMailDao
-import com.example.smartmail.data.remote.N8nApi
+import com.example.smartmail.data.remote.SmartMailApi
+import com.example.smartmail.domain.auth.GoogleAuthClient
 import com.example.smartmail.domain.repository.MailRepository
 import com.example.smartmail.domain.util.Resource
 import kotlinx.coroutines.Dispatchers
-
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -17,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class MailRepositoryImpl @Inject constructor(
     private val dao: SmartMailDao,
-    private val api: N8nApi
+    private val api: SmartMailApi,
+    private val authClient: GoogleAuthClient
 ) : MailRepository {
 
     // هذه الدالة تقرأ الإيميلات من الهاتف، وتحولها إلى Flow متدفق
@@ -40,25 +40,31 @@ class MailRepositoryImpl @Inject constructor(
         dao.insertMails(mails)
     }
 
-    override suspend fun syncMailsFromN8n(userId: String) {
+    override suspend fun syncMailsFromN8n(){
         withContext(Dispatchers.IO) {
             try {
-                // 1. اطلب الإيميلات الجديدة من سيرفر n8n الخاص بصديقك
-                // val newMailsFromServer = api.getNewMails(userId)
+                // 1. جلب التوكن السري من Firebase (بديل الـ userId)
+                val token = authClient.getFirebaseIdToken()
 
-                // 2. احفظها في قاعدة البيانات المحلية (Room)
-                // dao.insertMails(newMailsFromServer)
+                if (token != null) {
+                    val authHeader = "Bearer $token"
 
-                // (بما أن السيرفر غير جاهز، وضعناها كتعليق لكي لا ينهار التطبيق،
-                // بمجرد أن يعطيك الرابط، امسح علامة التعليق // وسيعمل السحر فوراً!)
+                    // 2. اطلب الإيميلات الجديدة من سيرفر Spring Boot الخاص بصديقك
+                    // val newMailsFromServer = api.fetchSmartMails(token = authHeader)
 
-                android.util.Log.d("SMART_MAIL_SYNC", "تم الاتصال الوهمي بنجاح! ننتظر رابط n8n.")
+                    // 3. احفظها في قاعدة البيانات المحلية (Room)
+                    // dao.insertMails(newMailsFromServer)
 
+                    android.util.Log.d("API_SYNC", "تم إرسال التوكن بنجاح! ننتظر رابط Spring Boot.")
+                } else {
+                    android.util.Log.e("API_SYNC", "لا يوجد توكن! يجب تسجيل الدخول أولاً.")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
+
 
 
     override suspend fun deleteMail(id: String) {

@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.smartmail.domain.preferences.SessionManager
 import com.example.smartmail.presentation.home.HomeView
 import com.example.smartmail.presentation.onboarding.OnboardingView
+import com.example.smartmail.presentation.profile.ProfileView
 import com.example.smartmail.ui.theme.SmartMailTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -68,7 +69,20 @@ class MainActivity : ComponentActivity() {
 
                         // 2. الشاشة الرئيسية (البطاقات الفخمة)
                         composable("home") {
-                            HomeView()
+                            HomeView(
+                                onProfileClick = { navController.navigate("profile") },
+                            )
+                        }
+                        composable("profile") {
+                            ProfileView(
+                                onBackClick = { navController.popBackStack() },
+                                onLogoutSuccess = {
+
+                                    navController.navigate("onboarding") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            )
                         }
                     }
                 }

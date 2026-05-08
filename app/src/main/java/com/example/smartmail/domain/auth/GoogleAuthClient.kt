@@ -69,6 +69,29 @@ class GoogleAuthClient(
             )
         } else null
     }
+
+    // دالة تسجيل الخروج من Firebase وجوجل
+    suspend fun signOut() {
+        try {
+            oneTapClient.signOut().await() // مسح حساب جوجل من الذاكرة المؤقتة
+            auth.signOut() // تسجيل الخروج من فايربيس
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // هذه الدالة تجلب التوكن السري الذي سنرسله لـ Spring Boot
+    suspend fun getFirebaseIdToken(): String? {
+        return try {
+            val user = auth.currentUser
+            // نجلب التوكن (ونقوم بتحديثه إذا كان منتهياً)
+            val tokenResult = user?.getIdToken(true)?.await()
+            tokenResult?.token
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
 
 // أضف هذا الـ Data Class خارج كلاس GoogleAuthClient في أسفل الملف

@@ -17,5 +17,11 @@ data class HomeUiState(
     val userName: String? = null,
     val userPhotoUrl: String? = null,
 
-    val selectedMail: SmartMailEntity? = null
+    val selectedMail: SmartMailEntity? = null,
+    val selectedCategory: String = "All",
+
+    val isReplying: Boolean = false, // هل نحن في وضع الرد؟
+    val replyTone: Float = 0.5f, // نبرة الرد (من 0 إلى 1)
+    val generatedReply: String = "", // الرد النهائي المولد
+    val isGeneratingReply: Boolean = false
 )

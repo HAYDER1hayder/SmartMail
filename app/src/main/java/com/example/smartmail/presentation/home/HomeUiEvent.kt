@@ -8,5 +8,12 @@ sealed class HomeUiEvent {
     data class OnMailClicked(val mail: SmartMailEntity) : HomeUiEvent() // الضغط على إيميل لفتحه
     object OnDismissMailDetail : HomeUiEvent() // إغلاق البطاقة/الستوري
     data class OnDeleteSwipe(val mailId: String) : HomeUiEvent() // سحب الإيميل لحذفه
+
+    data class OnCategorySelected(val category: String) : HomeUiEvent() // 👈 عند الضغط على فلتر
     object OnMagicAiButtonClicked : HomeUiEvent() // الزر السحري لقراءة الخلاصة فقط
+
+    object OnQuickReplyClicked : HomeUiEvent() // المستخدم ضغط زر Quick Reply
+    data class OnToneChanged(val tone: Float) : HomeUiEvent() // المستخدم سحب شريط النبرة
+    data class OnGenerateReplyClicked(val shortText: String) : HomeUiEvent() // المستخدم ضغط زر التوليد
+    object OnCancelReply : HomeUiEvent()
 }

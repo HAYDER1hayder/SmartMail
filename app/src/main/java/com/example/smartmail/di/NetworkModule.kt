@@ -1,6 +1,6 @@
 package com.example.smartmail.di
 
-import com.example.smartmail.data.remote.N8nApi
+import com.example.smartmail.data.remote.SmartMailApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +27,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideN8nApi(retrofit: Retrofit): N8nApi {
-        return retrofit.create(N8nApi::class.java)
+    fun provideN8nApi(retrofit: Retrofit): SmartMailApi {
+        return retrofit.create(SmartMailApi::class.java)
     }
 }
