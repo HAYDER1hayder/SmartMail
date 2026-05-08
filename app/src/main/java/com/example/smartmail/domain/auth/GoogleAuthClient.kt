@@ -15,7 +15,8 @@ import kotlin.coroutines.cancellation.CancellationException
 // هذه الأداة مسؤولة عن فتح شاشة جوجل، وجلب التوكن، ثم تسجيل الدخول في Firebase
 class GoogleAuthClient(
     private val context: Context,
-    private val webClientClientId: String // 👈 هذا الكود سنأخذه من Firebase لاحقاً
+    private val webClientClientId: String , // 👈 هذا الكود سنأخذه من Firebase لاحقاً
+    private val repository: MailRepository
 ) {
     private val auth = Firebase.auth
     private val oneTapClient: SignInClient = Identity.getSignInClient(context)
@@ -28,7 +29,15 @@ class GoogleAuthClient(
                     BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
                         .setSupported(true)
                         .setServerClientId(webClientClientId)
-                        .setFilterByAuthorizedAccounts(false) // إظهار كل الحسابات
+                        .setFilterByAuthorizedAccounts(false)
+                        .build()
+                )
+                // 👈 أضف هذا الجزء لكي لا يكون serverAuthCode دائماً null
+                .setServerAuthCodeRequestOptions(
+                    BeginSignInRequest.ServerAuthCodeRequestOptions.builder()
+                        .setSupported(true)
+                        .setServerClientId(webClientClientId)
+                        .setForceCodeForRefreshToken(true)
                         .build()
                 )
                 .setAutoSelectEnabled(true)
@@ -46,15 +55,21 @@ class GoogleAuthClient(
     // 2. هذه الدالة تأخذ النتيجة من الشاشة المنبثقة وتدخل بها إلى Firebase
     suspend fun signInWithIntent(intent: Intent): String? {
         val credential = oneTapClient.getSignInCredentialFromIntent(intent)
-        val googleIdToken = credential.googleIdToken
-        val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
+        val serverAuthCode = credential.serverAuthCode
 
         return try {
-            val user = auth.signInWithCredential(googleCredentials).await().user
-            user?.uid // إذا نجح، نرجع الآي دي الخاص بالمستخدم
+            val googleIdToken = credential.googleIdToken
+            val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
+            val authResult = auth.signInWithCredential(googleCredentials).await()
+            val user = authResult.user
+
+            if (user != null && serverAuthCode != null) {
+                repository.sendCodeToBackend(serverAuthCode, user.uid)
+            }
+
+            user?.uid
         } catch (e: Exception) {
             e.printStackTrace()
-            if (e is CancellationException) throw e
             null
         }
     }
@@ -77,4 +92,5 @@ data class UserData(
     val username: String?,
     val profilePictureUrl: String?
 )
+
 

@@ -13,21 +13,21 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://n8n.your-friend-server.com/"
+    // 👈 تأكد من وضع رابط سيرفر Spring Boot الخاص بك هنا (مثلاً localhost أو IP السيرفر)
+    private const val BASE_URL = "http://10.0.2.2:9090/"
 
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            // تحويل الـ JSON القادم من الإنترنت إلى كائنات Kotlin (SmartMailEntity)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideN8nApi(retrofit: Retrofit): N8nApi {
-        return retrofit.create(N8nApi::class.java)
+    fun provideBackendApi(retrofit: Retrofit): BackendApi {
+        return retrofit.create(BackendApi::class.java)
     }
 }
