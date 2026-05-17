@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -33,6 +33,7 @@ import com.example.smartmail.ui.theme.*
 fun ProfileView(
     onBackClick: () -> Unit,
     onLogoutSuccess: () -> Unit,
+    onScheduleClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userData by viewModel.userData.collectAsState()
@@ -41,11 +42,9 @@ fun ProfileView(
         containerColor = BackgroundDark,
         topBar = {
             TopAppBar(
-                title = { Text("Account", color = TextPrimary, fontWeight = FontWeight.Bold) },
+                title = { Text("Settings", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
+                    IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundDark)
             )
@@ -55,101 +54,125 @@ fun ProfileView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. الصورة الشخصية عالية الجودة (HD) مع الإطار الأنيق
-            Box(contentAlignment = Alignment.BottomEnd) {
+            // 1. بطاقة الهوية الأفقية (Horizontal ID Card) - فخمة وهادئة
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CardSurfaceDark)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // الصورة الشخصية بحجم منطقي وأنيق (64dp)
                 coil.compose.AsyncImage(
                     model = userData?.profilePictureUrl,
                     contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(100.dp) // حجم احترافي وليس عملاقاً
+                        .size(64.dp)
                         .clip(CircleShape)
-                        .border(3.dp, AccentCyberPink, CircleShape),
+                        .border(1.dp, CardBorder, CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                // شارة صغيرة خضراء تدل على أن الحساب نشط (Active)
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(AccentNeonGreen)
-                        .border(4.dp, BackgroundDark, CircleShape)
-                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // الاسم والإيميل (أو خطة الدفع)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = userData?.username ?: "SmartMail User",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Premium Plan (Active)", // نص بديل لرمز הـ userId المزعج
+                        color = PremiumAccent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // 2. اسم المستخدم والإيميل
-            Text(text = userData?.username ?: "SmartMail User", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Black)
-            Text(text = "Premium Member", color = AccentNeonGreen, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            // 2. قائمة الإعدادات (Settings List)
+            Text(
+                text = "APP PREFERENCES",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp)
+            )
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // 3. القائمة المعمّرة بالخصائص (Settings List)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(CardSurfaceDark)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             ) {
-                ProfileMenuItem(icon = Icons.Default.Notifications, title = "Push Notifications", subtitle = "On for urgent mails")
-                HorizontalDivider(color = BackgroundDark, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
+                ProfileMenuItem(icon = Icons.Default.DateRange, title = "Smart Schedule", onClick = onScheduleClick)
+                HorizontalDivider(color = CardBorder, thickness = 1.dp, modifier = Modifier.padding(start = 56.dp))
+                ProfileMenuItem(icon = Icons.Default.Notifications, title = "Push Notifications", onClick = { })
+                HorizontalDivider(color = CardBorder, thickness = 1.dp, modifier = Modifier.padding(start = 56.dp))
+                ProfileMenuItem(icon = Icons.Default.Settings, title = "Advanced Settings", onClick = { })
+            }
 
-                ProfileMenuItem(icon = Icons.Default.Settings, title = "n8n AI Settings", subtitle = "Manage webhook URLs")
-                HorizontalDivider(color = BackgroundDark, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                ProfileMenuItem(icon = Icons.Default.Info, title = "Help & Support", subtitle = "Contact development team")
+            // 3. زر تسجيل الخروج (مدمج كعنصر قائمة منفصل باللون الأحمر)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CardSurfaceDark)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.logout(onLogoutSuccess) }
+                        .padding(vertical = 16.dp, horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Logout", tint = UrgentRed, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = "Log Out", color = UrgentRed, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 4. زر تسجيل الخروج (أنيق ومناسب الحجم)
-            OutlinedButton(
-                onClick = { viewModel.logout(onLogoutSuccess) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = UrgentRed),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, UrgentRed.copy(alpha = 0.5f))
-            ) {
-                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Logout", modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Sign Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Text(text = "SmartMail v1.0.0", color = CardBorder, fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
-// 📌 مكون فرعي: عنصر واحد من القائمة
+// 📌 مكون فرعي: عنصر قائمة بسيط وأنيق
 @Composable
-fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String) {
+fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: Open setting */ }
-            .padding(20.dp),
+            .clickable { onClick() }
+            .padding(vertical = 16.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = CircleShape,
-            color = BackgroundDark,
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(imageVector = icon, contentDescription = title, tint = TextSecondary, modifier = Modifier.padding(8.dp))
-        }
+        Icon(imageVector = icon, contentDescription = title, tint = TextSecondary, modifier = Modifier.size(22.dp))
         Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(text = title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(text = subtitle, color = TextSecondary, fontSize = 13.sp)
-        }
+        Text(text = title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.weight(1f))
-        Text(text = "›", color = TextSecondary, fontSize = 20.sp) // سهم صغير لليمين
+        Text(text = "›", color = TextSecondary, fontSize = 20.sp)
     }
 }

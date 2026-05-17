@@ -20,6 +20,7 @@ import com.example.smartmail.domain.preferences.SessionManager
 import com.example.smartmail.presentation.home.HomeView
 import com.example.smartmail.presentation.onboarding.OnboardingView
 import com.example.smartmail.presentation.profile.ProfileView
+import com.example.smartmail.presentation.schedule.ScheduleView
 import com.example.smartmail.ui.theme.SmartMailTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -81,7 +82,14 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("onboarding") {
                                         popUpTo(0) { inclusive = true }
                                     }
-                                }
+                                },
+                                onScheduleClick = { navController.navigate("schedule") }
+                            )
+                        }
+
+                        composable("schedule") {
+                            ScheduleView(
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
                     }

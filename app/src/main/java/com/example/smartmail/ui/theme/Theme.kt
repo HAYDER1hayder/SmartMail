@@ -7,37 +7,34 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+// 1. نظام الألوان الداكن الفخم الخاص بنا
+private val SmartMailDarkColorScheme = darkColorScheme(
+    primary = PremiumAccent,
+    secondary = TextSecondary,
+    tertiary = PremiumAccent,
+    background = BackgroundDark,
+    surface = CardSurfaceDark,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    onBackground = TextPrimary,
+    onSurface = TextPrimary,
 )
 
+// 2. السمة (Theme) الأساسية للتطبيق
 @Composable
 fun SmartMailTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = true, // نحن نجبر التطبيق على الـ Dark Mode دائماً للحفاظ على الفخامة
+    // Dynamic color متاح في أندرويد 12+، لكننا نلغيه لكي لا يطغى على ألواننا الخاصة
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -45,9 +42,19 @@ fun SmartMailTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        else -> SmartMailDarkColorScheme
+    }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    // 3. تلوين شريط الحالة (Status Bar) وشريط الأزرار السفلية (Navigation Bar) ليتناسق مع الخلفية الداكنة
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = BackgroundDark.toArgb()
+            window.navigationBarColor = BackgroundDark.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+        }
     }
 
     MaterialTheme(

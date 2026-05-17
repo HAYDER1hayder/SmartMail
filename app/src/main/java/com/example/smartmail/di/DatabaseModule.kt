@@ -32,4 +32,11 @@ object DatabaseModule {
     fun provideSmartMailDao(db: AppDatabase): SmartMailDao {
         return db.smartMailDao
     }
+
+    // 👇 توفير بوابة الجدول الزمني
+    @Provides
+    @Singleton
+    fun provideScheduleDao(db: AppDatabase): com.example.smartmail.data.local.ScheduleDao {
+        return db.scheduleDao
+    }
 }

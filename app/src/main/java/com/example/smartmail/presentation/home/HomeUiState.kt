@@ -14,6 +14,8 @@ data class HomeUiState(
     val totalSpamCount: Int = 0,
     val totalWorkCount: Int = 0,
 
+    val currentContextRule: String = "Available",
+
     val userName: String? = null,
     val userPhotoUrl: String? = null,
 

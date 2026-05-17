@@ -16,9 +16,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -27,12 +29,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +57,9 @@ fun HomeView(
     var isMagicMode by remember { mutableStateOf(false) }
     val pullRefreshState = rememberPullToRefreshState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sensoryManager = remember { com.example.smartmail.domain.util.SensoryManager(context) }
+
     PullToRefreshBox(
         isRefreshing = state.isLoading,
         onRefresh = { viewModel.onEvent(HomeUiEvent.RefreshMails) },
@@ -61,7 +70,7 @@ fun HomeView(
                 modifier = Modifier.align(Alignment.TopCenter),
                 isRefreshing = state.isLoading,
                 state = pullRefreshState,
-                color = AccentNeonGreen,
+                color = PremiumAccent,
                 containerColor = CardSurfaceDark
             )
         }
@@ -74,7 +83,7 @@ fun HomeView(
                 .padding(top = 8.dp)
         ) {
             if (state.isLoading && state.allMails.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = AccentNeonGreen)
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PremiumAccent)
             } else if (state.error != null && state.allMails.isEmpty()) {
                 Text(text = "Error: ${state.error}", color = UrgentRed, modifier = Modifier.align(Alignment.Center))
             } else {
@@ -91,28 +100,32 @@ fun HomeView(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // الفلتر الزجاجي الساحر ✨
                     val categories = listOf("All", "Urgent", "Work", "Tech", "Spam")
                     LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(categories) { category ->
                             val isSelected = state.selectedCategory == category
                             Surface(
-                                onClick = { viewModel.onEvent(HomeUiEvent.OnCategorySelected(category)) },
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (isSelected) AccentCyberPink else CardSurfaceDark.copy(alpha = 0.5f),
+                                onClick = {
+                                    viewModel.onEvent(HomeUiEvent.OnCategorySelected(category))
+                                    sensoryManager.vibrateLightClick()
+                                },
+                                shape = RoundedCornerShape(100.dp), // شكل كبسولة دائرية تماماً
+                                color = if (isSelected) TextPrimary else CardSurfaceDark,
                                 border = androidx.compose.foundation.BorderStroke(
-                                    1.dp, if (isSelected) AccentCyberPink else TextSecondary.copy(alpha = 0.2f)
+                                    1.dp, if (isSelected) TextPrimary else CardBorder
                                 ),
-                                modifier = Modifier.height(36.dp)
+                                modifier = Modifier.height(38.dp)
                             ) {
                                 Text(
                                     text = category,
                                     color = if (isSelected) BackgroundDark else TextSecondary,
-                                    fontSize = 14.sp,
-                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    fontSize = 15.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                                 )
                             }
                         }
@@ -161,6 +174,9 @@ fun HomeView(
                                                 confirmValueChange = { dismissValue ->
                                                     if (dismissValue == SwipeToDismissBoxValue.EndToStart || dismissValue == SwipeToDismissBoxValue.StartToEnd) {
                                                         viewModel.onEvent(HomeUiEvent.OnDeleteSwipe(mail.id))
+                                                        // 👇 إحساس الحذف
+                                                        sensoryManager.vibrateDelete()
+                                                        sensoryManager.playSwipeSound()
                                                         true
                                                     } else false
                                                 }
@@ -191,7 +207,7 @@ fun HomeView(
             FloatingActionButton(
                 onClick = { isMagicMode = !isMagicMode },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 24.dp),
-                containerColor = if (isMagicMode) AccentCyberPink else AccentNeonGreen,
+                containerColor = if (isMagicMode) PremiumAccent else PremiumAccent,
                 contentColor = BackgroundDark
             ) {
                 Text(text = "✨", fontSize = 24.sp, modifier = Modifier.padding(12.dp))
@@ -210,7 +226,8 @@ fun HomeView(
             MailDetailSheetContent(
                 mail = state.selectedMail!!,
                 state = state, // 👈 مررنا الحالة
-                onEvent = { viewModel.onEvent(it) } // 👈 مررنا الأحداث
+                onEvent = { viewModel.onEvent(it) },
+                sensoryManager = sensoryManager
             )
         }
     }
@@ -220,36 +237,68 @@ fun HomeView(
 // المكونات الفرعية (Components)
 // =====================================================================
 
+// 🏷️ الترويسة الأنيقة
+// 🏷️ الترويسة الفخمة جداً (VIP Header)
 @Composable
 fun HomeHeader(totalMails: Int, urgentCount: Int, userName: String?, userPhotoUrl: String?, onProfileClick: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            coil.compose.AsyncImage(
-                model = userPhotoUrl, contentDescription = "Profile Picture",
-                modifier = Modifier.size(50.dp).clip(CircleShape).background(CardSurfaceDark).clickable { onProfileClick() },
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Hello, ${userName?.split(" ")?.first() ?: "User"}!",
-                    color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-                Text(text = "AI Analyzed: $totalMails Mails", color = TextSecondary, fontSize = 14.sp)
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = "Inbox", color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
+            Text(text = "$totalMails messages • AI active", color = PremiumAccent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
-        AnimatedVisibility(visible = urgentCount > 0) {
-            Surface(color = UrgentRed.copy(alpha = 0.2f), shape = MaterialTheme.shapes.large, border = androidx.compose.foundation.BorderStroke(1.dp, UrgentRed), modifier = Modifier.padding(start = 16.dp)) {
-                Text(text = "$urgentCount URGENT", color = UrgentRed, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+
+        // 👇 التصميم الاحترافي ذو الطبقات الثلاث (Triple Layer Avatar)
+        Box(
+            modifier = Modifier
+                .size(54.dp) // الحجم الإجمالي للزر
+                .clip(CircleShape)
+                .clickable { onProfileClick() }
+                // 1. الحلقة الخارجية: تدرج لوني يعطي إحساساً بالفخامة
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            PremiumAccent,
+                            PremiumAccent.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+                .padding(2.5.dp), // سمك الحلقة الملونة
+            contentAlignment = Alignment.Center
+        ) {
+            // 2. الفجوة السلبية (Negative Space)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(BackgroundDark) // نفس لون خلفية الشاشة لتبدو كفراغ
+                    .padding(3.5.dp), // سمك الفجوة السوداء
+                contentAlignment = Alignment.Center
+            ) {
+                // 3. الصورة الشخصية
+                coil.compose.AsyncImage(
+                    model = userPhotoUrl,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(CardSurfaceDark),
+                    contentScale = ContentScale.Crop
+                )
             }
         }
     }
 }
 
+
+
 @Composable
 fun AiNewsTickerMode(mails: List<SmartMailEntity>) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top, horizontalAlignment = Alignment.Start) {
-        Text(text = "AI EXECUTIVE SUMMARY", color = AccentCyberPink, fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
+        Text(text = "AI EXECUTIVE SUMMARY", color = PremiumAccent, fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
         Spacer(modifier = Modifier.height(32.dp))
         if (mails.isEmpty()) {
             Text("No news is good news!", color = TextSecondary)
@@ -269,213 +318,290 @@ fun AiNewsTickerMode(mails: List<SmartMailEntity>) {
     }
 }
 
+
 @Composable
 fun SmartMailCard(mail: SmartMailEntity, onClick: () -> Unit) {
-    val categoryColor = try { Color(android.graphics.Color.parseColor(mail.uiCategoryColor)) } catch (e: Exception) { AccentCyberPink }
+    val indicatorColor = when (mail.aiCategory.lowercase()) {
+        "work" -> PremiumAccent
+        "tech" -> Color(0xFF8B5CF6)
+        "spam" -> TextSecondary
+        else -> TextSecondary
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp), // زوايا أكثر نعومة
         colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            Box(modifier = Modifier.fillMaxHeight().width(6.dp).background(categoryColor))
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(20.dp).fillMaxWidth()) {
+
+            // السطر العلوي: المرسل والوقت
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(indicatorColor)) // نقطة لونيّة هادئة
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(text = mail.senderName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (mail.isUrgent) {
-                            Surface(color = UrgentRed.copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp), modifier = Modifier.padding(end = 8.dp)) {
-                                Text("URGENT", color = UrgentRed, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                            }
-                        }
-                        Text(text = mail.uiTimeFormatted, color = TextSecondary, fontSize = 12.sp)
-                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = mail.subject, color = TextPrimary.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(color = categoryColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
-                        Text(text = "✨", fontSize = 14.sp, modifier = Modifier.padding(end = 8.dp))
-                        Text(text = mail.aiSummary, color = categoryColor, fontSize = 13.sp, fontWeight = FontWeight.Medium, lineHeight = 18.sp)
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (mail.isUrgent) {
+                        Surface(color = UrgentRed.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                            Text("URGENT", color = UrgentRed, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), letterSpacing = 1.sp)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
+                    Text(text = mail.uiTimeFormatted, color = TextSecondary, fontSize = 12.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // عنوان الإيميل (بارز جداً)
+            Text(text = mail.subject, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 17.sp, lineHeight = 22.sp)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // خلاصة الذكاء الاصطناعي (أنيقة وغير مزعجة)
+            Surface(color = BackgroundDark, shape = RoundedCornerShape(12.dp)) { // خلفية سوداء داخل البطاقة الفحمية
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
+                    Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = PremiumAccent, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = mail.aiSummary, color = TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, lineHeight = 18.sp)
                 }
             }
         }
     }
 }
+
 
 // 📖 تصميم شاشة قراءة الإيميل من الداخل (مع تأثير Aura Theming الخرافي)
 @Composable
 fun MailDetailSheetContent(
     mail: SmartMailEntity,
-    state: HomeUiState, // 👈 أضفنا هذا لنقرأ حالة الرد
-    onEvent: (HomeUiEvent) -> Unit // 👈 أضفنا هذا لنرسل الأوامر
+    state: HomeUiState,
+    onEvent: (HomeUiEvent) -> Unit,
+    sensoryManager: com.example.smartmail.domain.util.SensoryManager
 ) {
-    val categoryColor = try { Color(android.graphics.Color.parseColor(mail.uiCategoryColor)) } catch (e: Exception) { AccentCyberPink }
+    var draftText by remember(mail.id) { mutableStateOf("") }
+    val scrollState = androidx.compose.foundation.rememberScrollState()
+    var isXRayMode by remember { mutableStateOf(false) }
 
-    // متغير محلي للنص القصير الذي سيكتبه المستخدم
-    var draftText by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
 
-    Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
-        // ... (احتفظ بالسطور الأولى لمعلومات الإيميل والعنوان كما هي) ...
+        // 1. Header (Sender Info)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text(text = mail.senderName, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = mail.senderName, color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Black)
                 Text(text = mail.senderEmail, color = TextSecondary, fontSize = 14.sp)
             }
-            Text(text = mail.uiTimeFormatted, color = TextSecondary, fontSize = 12.sp)
+            Text(text = mail.uiTimeFormatted, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        HorizontalDivider(color = CardSurfaceDark)
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(text = mail.subject, color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Black, lineHeight = 30.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-        Surface(color = categoryColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-            Text(text = "✨ AI Summary: ${mail.aiSummary}", color = categoryColor, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(12.dp))
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(text = mail.fullBody, color = TextPrimary.copy(alpha = 0.8f), fontSize = 16.sp, lineHeight = 26.sp)
-        Spacer(modifier = Modifier.height(40.dp))
 
-        // 👇 السحر البصري لـ Smart Reply
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider(color = CardBorder)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 2. Subject & AI Summary
+        Text(text = mail.subject, color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Black, lineHeight = 32.sp)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Surface(color = PremiumAccent.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, PremiumAccent.copy(alpha = 0.2f))) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = PremiumAccent, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(text = mail.aiSummary, color = PremiumAccent, fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = 22.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // 3. X-Ray Toggle & Full Body
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Message Content", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Surface(
+                onClick = {
+                    isXRayMode = !isXRayMode
+                    sensoryManager.vibrateLightClick()
+                },
+                shape = RoundedCornerShape(20.dp),
+                color = if (isXRayMode) PremiumAccent.copy(alpha = 0.15f) else Color.Transparent,
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (isXRayMode) PremiumAccent else CardBorder)
+            ) {
+                Text(
+                    text = if (isXRayMode) "X-Ray Active" else "Enable X-Ray",
+                    color = if (isXRayMode) PremiumAccent else TextSecondary,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        if (isXRayMode) {
+            Text(text = buildXRayText(mail.fullBody), fontSize = 16.sp, lineHeight = 26.sp)
+        } else {
+            Text(text = mail.fullBody, color = TextPrimary.copy(alpha = 0.9f), fontSize = 16.sp, lineHeight = 26.sp)
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // 4. Quick Reply Section (Minimalist Version)
         AnimatedVisibility(visible = !state.isReplying) {
-            // الزر العادي يظهر إذا لم نكن نرد
             Button(
                 onClick = { onEvent(HomeUiEvent.OnQuickReplyClicked) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = categoryColor)
+                shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = CardSurfaceDark),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
-                Text("✨ AI Quick Reply", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = BackgroundDark)
+                Text("Smart Reply ✨", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
         }
 
         AnimatedVisibility(visible = state.isReplying) {
-            // صندوق الرد الذكي يظهر عند الضغط
-            Column(
-                modifier = Modifier.fillMaxWidth().background(CardSurfaceDark, RoundedCornerShape(16.dp)).padding(16.dp)
-            ) {
-                // شريط النبرة (Slider)
-                Text("Tone of voice:", color = TextSecondary, fontSize = 12.sp)
-                Slider(
-                    value = state.replyTone,
-                    onValueChange = { onEvent(HomeUiEvent.OnToneChanged(it)) },
-                    colors = SliderDefaults.colors(thumbColor = categoryColor, activeTrackColor = categoryColor, inactiveTrackColor = BackgroundDark)
-                )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Formal", color = TextSecondary, fontSize = 10.sp)
-                    Text("Friendly", color = TextSecondary, fontSize = 10.sp)
-                    Text("Strict", color = TextSecondary, fontSize = 10.sp)
+            Column(modifier = Modifier.fillMaxWidth().background(CardSurfaceDark, RoundedCornerShape(20.dp)).border(1.dp, CardBorder, RoundedCornerShape(20.dp)).padding(20.dp)) {
+
+                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = PremiumAccent, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Context: ${state.currentContextRule}", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f), lineHeight = 18.sp)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // حقل النص
-                OutlinedTextField(
-                    value = draftText,
-                    onValueChange = { draftText = it },
-                    placeholder = { Text("Just say 'Yes' or 'No'...", color = TextSecondary) },
+                androidx.compose.foundation.lazy.LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, focusedBorderColor = categoryColor, unfocusedBorderColor = TextSecondary),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // عرض الرد المولد إذا كان موجوداً
-                if (state.generatedReply.isNotEmpty()) {
-                    Surface(color = AccentNeonGreen.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-                        Text(text = state.generatedReply, color = AccentNeonGreen, fontSize = 14.sp, modifier = Modifier.padding(12.dp))
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item {
+                        Surface(onClick = { draftText = "Sorry, ${state.currentContextRule}" }, shape = RoundedCornerShape(100.dp), color = BackgroundDark, border = androidx.compose.foundation.BorderStroke(1.dp, UrgentRed.copy(alpha=0.5f))) {
+                            Text("Decline", color = UrgentRed, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.Bold)
+                        }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    item {
+                        Surface(onClick = { draftText = "I'll review this later." }, shape = RoundedCornerShape(100.dp), color = BackgroundDark, border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)) {
+                            Text("Later", color = TextPrimary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    item {
+                        Surface(onClick = { draftText = "Noted. Proceeding." }, shape = RoundedCornerShape(100.dp), color = BackgroundDark, border = androidx.compose.foundation.BorderStroke(1.dp, PremiumAccent.copy(alpha=0.5f))) {
+                            Text("Proceed", color = PremiumAccent, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
 
-                // أزرار الإجراء
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { onEvent(HomeUiEvent.OnCancelReply) }) {
-                        Text("Cancel", color = TextSecondary)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                OutlinedTextField(
+                    value = draftText, onValueChange = { draftText = it },
+                    placeholder = { Text("Custom reply...", color = TextSecondary) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, focusedBorderColor = PremiumAccent, unfocusedBorderColor = CardBorder),
+                    shape = RoundedCornerShape(12.dp),
+                    minLines = 2, maxLines = 4
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                if (state.generatedReply.isNotEmpty()) {
+                    Surface(color = PremiumAccent.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, PremiumAccent.copy(alpha = 0.2f))) {
+                        Text(text = state.generatedReply, color = PremiumAccent, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
                     }
+                    Spacer(modifier = Modifier.height(20.dp))
+
                     Button(
-                        onClick = { onEvent(HomeUiEvent.OnGenerateReplyClicked(draftText)) },
-                        colors = ButtonDefaults.buttonColors(containerColor = categoryColor),
-                        enabled = draftText.isNotEmpty() && !state.isGeneratingReply
+                        onClick = { onEvent(HomeUiEvent.OnDismissMailDetail) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PremiumAccent)
                     ) {
-                        if (state.isGeneratingReply) {
-                            CircularProgressIndicator(color = BackgroundDark, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Generate 🪄", color = BackgroundDark)
+                        Text("Send Email", color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { onEvent(HomeUiEvent.OnCancelReply) }) { Text("Cancel", color = TextSecondary, fontWeight = FontWeight.Bold) }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Button(
+                            onClick = {
+                                onEvent(HomeUiEvent.OnGenerateReplyClicked(draftText))
+                                sensoryManager.playMagicSound()
+                                sensoryManager.vibrateSuccess()
+                            },
+                            shape = RoundedCornerShape(100.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = TextPrimary),
+                            enabled = draftText.isNotEmpty() && !state.isGeneratingReply
+                        ) {
+                            if (state.isGeneratingReply) CircularProgressIndicator(color = BackgroundDark, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Text("Generate ✨", color = BackgroundDark, fontWeight = FontWeight.Black)
                         }
                     }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(40.dp).windowInsetsPadding(WindowInsets.navigationBars))
     }
 }
 
 
+
+
 @Composable
 fun ZenModeView() {
-    // 1. أنيميشن التنفس (يكبر ويصغر ببطء ونعومة)
     val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "breathing")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.1f,
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
         animationSpec = androidx.compose.animation.core.infiniteRepeatable(
             animation = androidx.compose.animation.core.tween(2000, easing = FastOutSlowInEasing),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
-        label = "scale"
+        label = "alpha"
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // الأيقونة المتألقة
-        Box(
-            modifier = Modifier
-                .size(150.dp)
-                .clip(CircleShape)
-                .background(AccentNeonGreen.copy(alpha = 0.1f))
-                .border(1.dp, AccentNeonGreen.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = androidx.compose.material.icons.Icons.Default.CheckCircle,
-                contentDescription = "All Clear",
-                modifier = Modifier
-                    .size(80.dp)
-                    // 👇 التعديل هنا: استخدمنا graphicsLayer مباشرة
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
-                tint = AccentNeonGreen
-            )
-        }
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // الرسالة التشجيعية
         Text(
-            text = "Inbox Zero!",
-            color = TextPrimary,
+            text = "Inbox Zero",
+            color = TextPrimary.copy(alpha = alpha), // النص هو الذي يتنفس الآن
             fontSize = 32.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 2.sp
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "You've crushed all your urgent mails.\nTake a deep breath and enjoy your day.",
+            text = "You're all caught up.\nEnjoy your day.",
             color = TextSecondary,
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
+    }
+}
+
+// 👓 دالة الأشعة السينية (X-Ray) بتوحيد الألوان
+@Composable
+fun buildXRayText(fullText: String): androidx.compose.ui.text.AnnotatedString {
+    val dateRegex = "\\b(\\d{1,2}/\\d{1,2}/\\d{4}|tomorrow|today|Monday|Tuesday|Wednesday|Thursday|Friday)\\b".toRegex(RegexOption.IGNORE_CASE)
+    val moneyRegex = "\\$?\\b\\d+(?:,\\d{3})*(?:\\.\\d{2})?\\b".toRegex()
+    val emailRegex = "[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}".toRegex()
+
+    val highlightColor = PremiumAccent // استخدام لون واحد للأشعة
+    val dimmedColor = TextSecondary.copy(alpha = 0.3f)
+
+    return androidx.compose.ui.text.buildAnnotatedString {
+        withStyle(androidx.compose.ui.text.SpanStyle(color = dimmedColor)) { append(fullText) }
+
+        val style = androidx.compose.ui.text.SpanStyle(color = highlightColor, fontWeight = FontWeight.Black, background = highlightColor.copy(alpha = 0.1f))
+
+        dateRegex.findAll(fullText).forEach { matchResult -> addStyle(style, matchResult.range.first, matchResult.range.last + 1) }
+        moneyRegex.findAll(fullText).forEach { matchResult -> addStyle(style, matchResult.range.first, matchResult.range.last + 1) }
+        emailRegex.findAll(fullText).forEach { matchResult -> addStyle(style, matchResult.range.first, matchResult.range.last + 1) }
     }
 }

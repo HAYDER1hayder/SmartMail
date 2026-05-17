@@ -2,6 +2,7 @@ package com.example.smartmail.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smartmail.data.local.ScheduleDao
 import com.example.smartmail.domain.auth.GoogleAuthClient
 import com.example.smartmail.domain.repository.MailRepository
 import com.example.smartmail.domain.util.Resource
@@ -12,12 +13,15 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: MailRepository,
-    private val googleAuthClient: GoogleAuthClient
+    private val googleAuthClient: GoogleAuthClient,
+    private val scheduleDao: ScheduleDao
 ) : ViewModel() {
 
     // المتغير الوحيد الذي تراقبه الشاشة
@@ -27,7 +31,61 @@ class HomeViewModel @Inject constructor(
     init {
         loadUserData()
         observeMails()
-        insertFakeDataForTesting() // 👈 أضفنا هذا السطر
+        insertFakeDataForTesting()
+        checkCurrentContext()
+    }
+
+    // 👇 الدالة الذكية بعد إصلاح نظام قراءة الوقت
+    private fun checkCurrentContext() {
+        viewModelScope.launch {
+            scheduleDao.getAllSchedules().collect { schedules ->
+                if (schedules.isEmpty()) {
+                    _uiState.update { it.copy(currentContextRule = "Available (No active schedule)") }
+                    return@collect
+                }
+
+                // 1. استخراج الوقت الحالي بالساعات والدقائق
+                val currentHour = java.time.LocalTime.now().hour
+                val currentMinute = java.time.LocalTime.now().minute
+                // تحويل الوقت الحالي إلى رقم واحد (إجمالي الدقائق) لسهولة المقارنة
+                val currentTotalMinutes = (currentHour * 60) + currentMinute
+
+                var foundActivity: com.example.smartmail.data.local.ScheduleEntity? = null
+
+                // 2. البحث في الجدول
+                for (schedule in schedules) {
+                    try {
+                        // تقسيم وقت البداية (مثلاً "08:30" تصبح 8 و 30)
+                        val startParts = schedule.startTime.split(":")
+                        val startTotalMinutes = (startParts[0].toInt() * 60) + startParts[1].toInt()
+
+                        // تقسيم وقت النهاية
+                        val endParts = schedule.endTime.split(":")
+                        val endTotalMinutes = (endParts[0].toInt() * 60) + endParts[1].toInt()
+
+                        // هل الوقت الحالي يقع بين البداية والنهاية؟
+                        if (currentTotalMinutes in startTotalMinutes..endTotalMinutes) {
+                            foundActivity = schedule
+                            break // وجدنا النشاط، نتوقف عن البحث
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // تجاهل إذا كان تنسيق الوقت خاطئاً في أحد الأنشطة
+                    }
+                }
+
+                // 3. تحديث الواجهة بالنتيجة
+                if (foundActivity != null) {
+                    _uiState.update {
+                        it.copy(currentContextRule = foundActivity.aiReplyRule)
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(currentContextRule = "Available (No active schedule right now)")
+                    }
+                }
+            }
+        }
     }
 
     private fun loadUserData() {
@@ -82,6 +140,54 @@ class HomeViewModel @Inject constructor(
                         isUrgent = false,
                         uiTimeFormatted = "2 days ago",
                         uiCategoryColor = "#94A3B8" // Slate Gray
+                    ),
+                    com.example.smartmail.data.local.SmartMailEntity(
+                        id = "9",
+                        senderName = "AWS Support",
+                        senderEmail = "admin@aws-billing-fake.com",
+                        subject = "Action Required: Account Suspended",
+                        fullBody = "Click the link below to verify your credit card details or your EC2 instances will be terminated.",
+                        aiSummary = "Phishing Alert: Fake AWS suspension notice. Do not click any links.",
+                        aiCategory = "Spam",
+                        isUrgent = false,
+                        uiTimeFormatted = "2 days ago",
+                        uiCategoryColor = "#94A3B8" // Slate Gray
+                    ),
+                    com.example.smartmail.data.local.SmartMailEntity(
+                        id = "4",
+                        senderName = "AWS Support",
+                        senderEmail = "admin@aws-billing-fake.com",
+                        subject = "Action Required: Account Suspended",
+                        fullBody = "Click the link below to verify your credit card details or your EC2 instances will be terminated.",
+                        aiSummary = "Phishing Alert: Fake AWS suspension notice. Do not click any links.",
+                        aiCategory = "Spam",
+                        isUrgent = false,
+                        uiTimeFormatted = "2 days ago",
+                        uiCategoryColor = "#94A3B8" // Slate Gray
+                    ),
+                    com.example.smartmail.data.local.SmartMailEntity(
+                        id = "5",
+                        senderName = "AWS Support",
+                        senderEmail = "admin@aws-billing-fake.com",
+                        subject = "Action Required: Account Suspended",
+                        fullBody = "Click the link below to verify your credit card details or your EC2 instances will be terminated.",
+                        aiSummary = "Phishing Alert: Fake AWS suspension notice. Do not click any links.",
+                        aiCategory = "Spam",
+                        isUrgent = false,
+                        uiTimeFormatted = "2 days ago",
+                        uiCategoryColor = "#94A3B8" // Slate Gray
+                    ),
+                    com.example.smartmail.data.local.SmartMailEntity(
+                        id = "6",
+                        senderName = "AWS Support",
+                        senderEmail = "admin@aws-billing-fake.com",
+                        subject = "Action Required: Account Suspended",
+                        fullBody = "Click the link below to verify your credit card details or your EC2 instances will be terminated.",
+                        aiSummary = "Phishing Alert: Fake AWS suspension notice. Do not click any links.",
+                        aiCategory = "Spam",
+                        isUrgent = false,
+                        uiTimeFormatted = "2 days ago",
+                        uiCategoryColor = "#94A3B8" // Slate Gray
                     )
                 )
                 // Insert into Room Database
@@ -106,10 +212,23 @@ class HomeViewModel @Inject constructor(
                 }
             }
             is HomeUiEvent.OnMailClicked -> {
-                _uiState.update { it.copy(selectedMail = event.mail) }
+                _uiState.update {
+                    it.copy(
+                        selectedMail = event.mail,
+                        isReplying = false,
+                        generatedReply = "",
+                        replyTone = 0.5f
+                    )
+                }
             }
             is HomeUiEvent.OnDismissMailDetail -> {
-                _uiState.update { it.copy(selectedMail = null) }
+                _uiState.update {
+                    it.copy(
+                        selectedMail = null,
+                        isReplying = false,
+                        generatedReply = ""
+                    )
+                }
             }
             is HomeUiEvent.OnCategorySelected -> {
                 _uiState.update { it.copy(selectedCategory = event.category) }
@@ -131,7 +250,7 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(isReplying = false) }
             }
             is HomeUiEvent.OnToneChanged -> {
-                _uiState.update { it.copy(replyTone = event.tone) }
+                _uiState.update { it.copy(isReplying = false, generatedReply = "") }
             }
             is HomeUiEvent.OnGenerateReplyClicked -> {
                 _uiState.update { it.copy(isGeneratingReply = true) }

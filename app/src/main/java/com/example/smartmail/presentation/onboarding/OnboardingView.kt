@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.smartmail.ui.theme.AccentNeonGreen
+import com.example.smartmail.ui.theme.PremiumAccent
 import com.example.smartmail.ui.theme.BackgroundDark
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -90,14 +90,14 @@ fun OnboardingView(
                             colors = listOf(Color(0xFF1E293B), BackgroundDark)
                         )
                     )
-                    .border(2.dp, AccentNeonGreen.copy(alpha = 0.5f), CircleShape),
+                    .border(2.dp, PremiumAccent.copy(alpha = 0.5f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = "Logo",
                     modifier = Modifier.size(50.dp),
-                    tint = AccentNeonGreen
+                    tint = PremiumAccent
                 )
             }
 
