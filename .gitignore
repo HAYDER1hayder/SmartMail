@@ -1,15 +1,31 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+from sympy import symbols
+from sympy.logic.boolalg import truth_table, satisfiable
+from sympy.abc import P, Q, R
+
+# TODO: Define phi1, phi2, and phi3 using SymPy operators (&, |, ~, >>)
+# Note: Since <=> is biconditional, we express (P <=> Q) as ((P >> Q) & (Q >> P))
+phi1 = ((P >> Q) & (Q >> R)) >> (P >> R)
+phi2 = (P | Q) & (~P | R) & (Q >> R)
+phi3 = ((P >> Q) & (Q >> P)) & (P & ~Q)
+
+# TODO: Iterate over truth tables and print classification status
+formulas = [("phi1", phi1), ("phi2", phi2), ("phi3", phi3)]
+
+for name, phi in formulas:
+    print(f"--- {name} ---")
+    
+    # Get symbols dynamically from the formula and sort them alphabetically
+    vars_list = sorted(list(phi.atoms()), key=lambda x: x.name)
+    
+    # Print truth table rows
+    print(f"Variables: {vars_list}")
+    for row in truth_table(phi, vars_list):
+        print(row)
+        
+    # Classify the formula
+    if not satisfiable(~phi):  # If the negation is never true, it is a Tautology
+        print("Classification: Tautology\n")
+    elif satisfiable(phi):     # If it can be true at least once
+        print("Classification: Satisfiable\n")
+    else:                      # If it is never true
+        print("Classification: Unsatisfiable\n")
