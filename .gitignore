@@ -1,20 +1,23 @@
 import matplotlib.pyplot as plt
 
-# 1. Generate X values from 1 to 100
-X = list(range(1, 101))
+# 1. إنشاء مساحة رسم ثلاثية الأبعاد
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
 
-# 2. Define Y values where Y = X
-Y = X
+# 2. تعريف البيانات (إضافة المحور Z كمثال)
+X = list(range(1, 100))  # تقليل الرقم إلى 100 لوضوح الرسم
+Y = [i**2 for i in X]
+Z = [i**1.5 for i in X]  # البُعد الثالث الجديد
 
-# 3. Plot Y = X on the graph
-plt.plot(X, Y, label='Y = X', color='blue')
+# 3. رسم الخط ثلاثي الأبعاد
+ax.plot(X, Y, Z, label='Y = X^2', color='red')
 
-# 4. Add labels, grid, and title for clarity
-plt.xlabel('X Axis')
-plt.ylabel('Y Axis')
-plt.title('Plot of Y = X')
-plt.grid(True)
-plt.legend()
+# 4. تسمية المحاور والعنوان
+ax.set_xlabel('Time')
+ax.set_ylabel('Sample')
+ax.set_zlabel('Z Axis')
+ax.set_title('Observation 01 (3D)')
 
-# 5. Display the graph
+# 5. إظهار وسائل الإيضاح والرسم
+ax.legend()
 plt.show()
