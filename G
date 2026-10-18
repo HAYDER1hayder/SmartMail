@@ -1,0 +1,28 @@
+from sympy.abc import R, W, S
+from sympy.logic.boolalg import Implies, And, Not
+from sympy.logic.inference import satisfiable
+
+# 1. Define the Knowledge Base (KB) formulas
+fact1 = Implies(R, W)
+fact2 = Implies(W, S)
+fact3 = R
+
+kb = And(fact1, fact2, fact3)
+
+# 2. Define the negated goal (~G)
+negated_goal = Not(S)
+
+# 3. Combine KB and negated goal
+formula = And(kb, negated_goal)
+
+# 4. Check if the formula is satisfiable
+result = satisfiable(formula)
+
+# 5. Output the result
+print(f"Satisfiability result: {result}")
+
+if result is False:
+    print("The formula KB ∧ ¬G is unsatisfiable (False).")
+    print("Hence, the goal G (S) is successfully proven by contradiction.")
+else:
+    print("The formula is satisfiable.")
