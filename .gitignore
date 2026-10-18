@@ -1,23 +1,28 @@
-import matplotlib.pyplot as plt
 
-# 1. إنشاء مساحة رسم ثلاثية الأبعاد
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+from sympy import symbols, Implies, And, Not
+from sympy.logic.inference import satisfiable
 
-# 2. تعريف البيانات (إضافة المحور Z كمثال)
-X = list(range(1, 100))  # تقليل الرقم إلى 100 لوضوح الرسم
-Y = [i**2 for i in X]
-Z = [i**1.5 for i in X]  # البُعد الثالث الجديد
+# Define propositional symbols
+R, W, S = symbols('R W S')
 
-# 3. رسم الخط ثلاثي الأبعاد
-ax.plot(X, Y, Z, label='Y = X^2', color='red')
+# Knowledge Base
+fact1 = Implies(R, W)
+fact2 = Implies(W, S)
+fact3 = R
 
-# 4. تسمية المحاور والعنوان
-ax.set_xlabel('Time')
-ax.set_ylabel('Sample')
-ax.set_zlabel('Z Axis')
-ax.set_title('Observation 01 (3D)')
+KB = And(fact1, fact2, fact3)
 
-# 5. إظهار وسائل الإيضاح والرسم
-ax.legend()
-plt.show()
+# Negate the goal
+not_G = Not(S)
+
+# Check KB AND NOT G
+formula = And(KB, not_G)
+result = satisfiable(formula)
+
+print("KB AND NOT G:", formula)
+print("Result:", result)
+
+if result is False:
+    print("UNSATISFIABLE: The goal S is proved.")
+else:
+    print("SATISFIABLE: The goal is not proved.")
