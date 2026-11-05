@@ -1,78 +1,29 @@
 
-import random
-import time
-import matplotlib.pyplot as plt
+# Graphical Results
 
-# Selection Sort
-def selection_sort(T):
-    n = len(T)
+fig, axes = plt.subplots(2, 2)
 
-    for i in range(n):
-        min = i
+fig.suptitle("Comparison of Sorting Algorithms")
 
-        for j in range(i + 1, n):
-            if T[j] < T[min]:
-                min = j
+# Graph 1: Selection Sort
+axes[0, 0].plot(sizes, selection)
+axes[0, 0].set_title("Selection Sort")
 
-        T[i], T[min] = T[min], T[i]
+# Graph 2: Comparison between A and B
+axes[0, 1].plot(sizes, selection, color='red', label='A')
+axes[0, 1].plot(sizes, bubble, label='B')
+axes[0, 1].set_title("Comparison")
+axes[0, 1].legend()
 
+# Graph 3: Random Case - Bubble Sort
+axes[1, 0].plot(sizes, bubble)
+axes[1, 0].set_title("Random Case")
 
-# Bubble Sort
-def bubble_sort(T):
-    n = len(T)
+# Graph 4
+axes[1, 1].plot(sizes, selection, label='Selection')
+axes[1, 1].plot(sizes, bubble, label='Bubble')
+axes[1, 1].set_title("Execution Time")
+axes[1, 1].legend()
 
-    for i in range(n):
-        for j in range(n - i - 1):
-            if T[j] > T[j + 1]:
-                T[j], T[j + 1] = T[j + 1], T[j]
-
-
-# Multiple Tests
-sizes = [100, 200, 300, 400, 500]
-
-selection = []
-bubble = []
-
-for n in sizes:
-
-    T = [random.randint(1, 1000) for i in range(n)]
-
-    # Selection Sort test
-    A = T.copy()
-
-    start = time.time()
-    selection_sort(A)
-    end = time.time()
-
-    selection.append(end - start)
-
-    # Bubble Sort test
-    B = T.copy()
-
-    start = time.time()
-    bubble_sort(B)
-    end = time.time()
-
-    bubble.append(end - start)
-
-
-# Display results
-print("Size    Selection    Bubble")
-
-for i in range(len(sizes)):
-    print(sizes[i], "   ",
-          selection[i], "   ",
-          bubble[i])
-
-
-# Draw graph
-plt.plot(sizes, selection, label="Selection Sort", marker="o")
-plt.plot(sizes, bubble, label="Bubble Sort", marker="o")
-
-plt.xlabel("Number of elements")
-plt.ylabel("Execution time")
-plt.title("Sorting Algorithms Comparison")
-
-plt.legend()
-plt.grid()
+plt.tight_layout()
 plt.show()
