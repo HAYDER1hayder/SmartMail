@@ -1,13 +1,100 @@
 
-T = [1, 6, 3, 4, 5, 2]
+import random
+import time
+import matplotlib.pyplot as plt
 
-n = len(T)
+# 1. Selection Sort
+def selection_sort(arr):
+    a = arr.copy()
+    n = len(a)
 
-for i in range(n - 1):
-    for j in range(n - i - 1):
-        if T[j] > T[j + 1]:
-            temp = T[j]
-            T[j] = T[j + 1]
-            T[j + 1] = temp
+    for i in range(n):
+        min_index = i
 
-print("Tableau trie :", T)
+        for j in range(i + 1, n):
+            if a[j] < a[min_index]:
+                min_index = j
+
+        a[i], a[min_index] = a[min_index], a[i]
+
+    return a
+
+
+# 2. Bubble Sort
+def bubble_sort(arr):
+    a = arr.copy()
+    n = len(a)
+
+    for i in range(n):
+        swapped = False
+
+        for j in range(n - i - 1):
+            if a[j] > a[j + 1]:
+                a[j], a[j + 1] = a[j + 1], a[j]
+                swapped = True
+
+        if not swapped:
+            break
+
+    return a
+
+
+# 3. Multiple Tests
+sizes = [100, 200, 400, 600, 800, 1000, 1500, 2000]
+
+selection_times = []
+bubble_times = []
+
+for size in sizes:
+
+    selection_total = 0
+    bubble_total = 0
+
+    for test in range(3):
+
+        data = [random.randint(1, 10000) for _ in range(size)]
+
+        # Test Selection Sort
+        start = time.perf_counter()
+        selection_sort(data)
+        end = time.perf_counter()
+
+        selection_total += end - start
+
+        # Test Bubble Sort
+        start = time.perf_counter()
+        bubble_sort(data)
+        end = time.perf_counter()
+
+        bubble_total += end - start
+
+    # Calculate average time
+    selection_times.append(selection_total / 3)
+    bubble_times.append(bubble_total / 3)
+
+
+# 4. Display Results
+print("Size\tSelection Sort\tBubble Sort")
+
+for i in range(len(sizes)):
+    print(sizes[i], "\t",
+          round(selection_times[i], 6), "\t",
+          round(bubble_times[i], 6))
+
+
+# 5. Draw Graph
+plt.plot(sizes, selection_times, marker='o',
+         label='Selection Sort')
+
+plt.plot(sizes, bubble_times, marker='s',
+         label='Bubble Sort')
+
+plt.xlabel("Number of Elements")
+plt.ylabel("Execution Time (Seconds)")
+
+plt.title("Selection Sort vs Bubble Sort")
+
+plt.legend()
+plt.grid()
+
+plt.show()
