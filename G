@@ -3,98 +3,76 @@ import random
 import time
 import matplotlib.pyplot as plt
 
-# 1. Selection Sort
-def selection_sort(arr):
-    a = arr.copy()
-    n = len(a)
+# Selection Sort
+def selection_sort(T):
+    n = len(T)
 
     for i in range(n):
-        min_index = i
+        min = i
 
         for j in range(i + 1, n):
-            if a[j] < a[min_index]:
-                min_index = j
+            if T[j] < T[min]:
+                min = j
 
-        a[i], a[min_index] = a[min_index], a[i]
-
-    return a
+        T[i], T[min] = T[min], T[i]
 
 
-# 2. Bubble Sort
-def bubble_sort(arr):
-    a = arr.copy()
-    n = len(a)
+# Bubble Sort
+def bubble_sort(T):
+    n = len(T)
 
     for i in range(n):
-        swapped = False
-
         for j in range(n - i - 1):
-            if a[j] > a[j + 1]:
-                a[j], a[j + 1] = a[j + 1], a[j]
-                swapped = True
-
-        if not swapped:
-            break
-
-    return a
+            if T[j] > T[j + 1]:
+                T[j], T[j + 1] = T[j + 1], T[j]
 
 
-# 3. Multiple Tests
-sizes = [100, 200, 400, 600, 800, 1000, 1500, 2000]
+# Multiple Tests
+sizes = [100, 200, 300, 400, 500]
 
-selection_times = []
-bubble_times = []
+selection = []
+bubble = []
 
-for size in sizes:
+for n in sizes:
 
-    selection_total = 0
-    bubble_total = 0
+    T = [random.randint(1, 1000) for i in range(n)]
 
-    for test in range(3):
+    # Selection Sort test
+    A = T.copy()
 
-        data = [random.randint(1, 10000) for _ in range(size)]
+    start = time.time()
+    selection_sort(A)
+    end = time.time()
 
-        # Test Selection Sort
-        start = time.perf_counter()
-        selection_sort(data)
-        end = time.perf_counter()
+    selection.append(end - start)
 
-        selection_total += end - start
+    # Bubble Sort test
+    B = T.copy()
 
-        # Test Bubble Sort
-        start = time.perf_counter()
-        bubble_sort(data)
-        end = time.perf_counter()
+    start = time.time()
+    bubble_sort(B)
+    end = time.time()
 
-        bubble_total += end - start
-
-    # Calculate average time
-    selection_times.append(selection_total / 3)
-    bubble_times.append(bubble_total / 3)
+    bubble.append(end - start)
 
 
-# 4. Display Results
-print("Size\tSelection Sort\tBubble Sort")
+# Display results
+print("Size    Selection    Bubble")
 
 for i in range(len(sizes)):
-    print(sizes[i], "\t",
-          round(selection_times[i], 6), "\t",
-          round(bubble_times[i], 6))
+    print(sizes[i], "   ",
+          selection[i], "   ",
+          bubble[i])
 
 
-# 5. Draw Graph
-plt.plot(sizes, selection_times, marker='o',
-         label='Selection Sort')
+# Draw graph
+plt.plot(sizes, selection, label="Selection Sort", marker="o")
+plt.plot(sizes, bubble, label="Bubble Sort", marker="o")
 
-plt.plot(sizes, bubble_times, marker='s',
-         label='Bubble Sort')
-
-plt.xlabel("Number of Elements")
-plt.ylabel("Execution Time (Seconds)")
-
-plt.title("Selection Sort vs Bubble Sort")
+plt.xlabel("Number of elements")
+plt.ylabel("Execution time")
+plt.title("Sorting Algorithms Comparison")
 
 plt.legend()
 plt.grid()
-
 plt.show()
